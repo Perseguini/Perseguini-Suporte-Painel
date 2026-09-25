@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perseguini Suporte IA</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header>
+    <div>
+      <h1>Perseguini Suporte IA</h1>
+      <p>Painel do Técnico</p>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="resumo">
+      <div class="card-resumo">
+        <span>Chamados</span>
+        <strong id="totalChamados">0</strong>
+      </div>
+
+      <div class="card-resumo">
+        <span>Aguardando humano</span>
+        <strong id="aguardando">0</strong>
+      </div>
+    </section>
+
+    <section>
+      <div class="titulo-lista">
+        <h2>Chamados</h2>
+
+        <button onclick="carregarChamados()">
+          Atualizar
+        </button>
+      </div>
+
+      <div id="listaChamados">
+        Carregando chamados...
+      </div>
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
