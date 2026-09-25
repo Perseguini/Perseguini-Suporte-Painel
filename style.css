@@ -15,6 +15,10 @@
   --sucesso-hover: #166534;
   --alerta-bg: #fff3cd;
   --alerta-texto: #856404;
+  --atendimento-bg: #dbeafe;
+  --atendimento-texto: #1d4ed8;
+  --resolvido-bg: #dcfce7;
+  --resolvido-texto: #166534;
 }
 
 body {
@@ -40,7 +44,7 @@ header {
 }
 
 .cabecalho-conteudo {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -59,14 +63,14 @@ header p {
 }
 
 main {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 30px auto;
   padding: 0 20px 40px;
 }
 
 .resumo {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
   margin-bottom: 30px;
 }
@@ -91,12 +95,24 @@ main {
   margin-top: 8px;
 }
 
+.aguardando-card {
+  border-left: 4px solid #eab308;
+}
+
+.atendimento-card {
+  border-left: 4px solid #2563eb;
+}
+
+.resolvidos-card {
+  border-left: 4px solid #16a34a;
+}
+
 .titulo-lista {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .titulo-lista h2 {
@@ -107,6 +123,30 @@ main {
   margin: 5px 0 0;
   color: var(--texto-suave);
   font-size: 14px;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.filtro {
+  background: white;
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  transition: .2s;
+}
+
+.filtro:hover {
+  background: #f8fafc;
+}
+
+.filtro.ativo {
+  background: var(--escuro);
+  color: white;
+  border-color: var(--escuro);
 }
 
 .chamado {
@@ -130,12 +170,25 @@ main {
 }
 
 .status {
-  background: var(--alerta-bg);
-  color: var(--alerta-texto);
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.status-aguardando {
+  background: var(--alerta-bg);
+  color: var(--alerta-texto);
+}
+
+.status-atendimento {
+  background: var(--atendimento-bg);
+  color: var(--atendimento-texto);
+}
+
+.status-resolvido {
+  background: var(--resolvido-bg);
+  color: var(--resolvido-texto);
 }
 
 .problema {
@@ -190,6 +243,11 @@ button {
 
 .botao-abrir {
   margin-top: 16px;
+}
+
+button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
 }
 
 .mensagem-vazia,
@@ -355,6 +413,12 @@ button {
   box-shadow: 0 8px 30px rgba(0,0,0,.22);
 }
 
+@media (max-width: 950px) {
+  .resumo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 700px) {
   .resumo,
   .grade-detalhes {
@@ -382,5 +446,10 @@ button {
 
   .acoes-resposta {
     flex-direction: column-reverse;
+  }
+
+  .filtros {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
   }
 }

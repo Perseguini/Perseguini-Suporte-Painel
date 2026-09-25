@@ -8,6 +8,8 @@ const API_ATUALIZAR_STATUS =
   "https://desktop-cc7diaj.tail8f3985.ts.net/webhook/chamado/status";
 
 let chamadoAtual = null;
+let chamadosCache = [];
+let filtroAtual = "todos";
 
 async function carregarChamados() {
   const lista = document.getElementById("listaChamados");
@@ -23,102 +25,20 @@ async function carregarChamados() {
 
     const dados = await resposta.json();
 
-    const chamados = Array.isArray(dados.chamados)
+    chamadosCache = Array.isArray(dados.chamados)
       ? dados.chamados
       : [];
 
-    document.getElementById("totalChamados").textContent =
-      chamados.length;
-
-    const aguardando = chamados.filter(
-      chamado => chamado.status === "aguardando_humano"
-    );
-
-    document.getElementById("aguardando").textContent =
-      aguardando.length;
-
-    if (chamados.length === 0) {
-      lista.innerHTML = `
-        <div class="mensagem-vazia">
-          Nenhum chamado encontrado.
-        </div>
-      `;
-
-      return;
-    }
-
-    lista.innerHTML = "";
-
-    chamados.forEach(chamado => {
-      const numero = limparNumero(chamado.numero);
-
-      const card = document.createElement("div");
-      card.className = "chamado";
-
-      const topo = document.createElement("div");
-      topo.className = "chamado-topo";
-
-      const cliente = document.createElement("div");
-
-      cliente.innerHTML = `
-        <strong class="numero-cliente">
-          ${escapeHtml(numero)}
-        </strong>
-
-        <div class="data">
-          ${escapeHtml(chamado.data || "")}
-        </div>
-      `;
-
-      const status = document.createElement("span");
-      status.className = "status";
-      status.textContent = formatarStatus(chamado.status);
-
-      topo.appendChild(cliente);
-      topo.appendChild(status);
-
-      const problema = document.createElement("div");
-      problema.className = "problema";
-
-      const tituloProblema = document.createElement("strong");
-      tituloProblema.textContent = "Problema:";
-
-      const textoProblema = document.createElement("p");
-      textoProblema.textContent =
-        chamado.problema_original || "Não informado";
-
-      problema.appendChild(tituloProblema);
-      problema.appendChild(textoProblema);
-
-      const botao = document.createElement("button");
-      botao.className = "botao-secundario botao-abrir";
-      botao.textContent = "Abrir chamado";
-
-      botao.addEventListener(
-        "click",
-        () => abrirChamado(chamado)
-      );
-
-      card.appendChild(topo);
-      card.appendChild(problema);
-      card.appendChild(botao);
-
-      lista.appendChild(card);
-    });
+    atualizarContadores();
+    renderizarChamados();
 
   } catch (erro) {
-    console.error(
-      "Erro ao carregar chamados:",
-      erro
-    );
+    console.error("Erro ao carregar chamados:", erro);
 
-    document.getElementById(
-      "totalChamados"
-    ).textContent = "0";
-
-    document.getElementById(
-      "aguardando"
-    ).textContent = "0";
+    document.getElementById("totalChamados").textContent = "0";
+    document.getElementById("aguardando").textContent = "0";
+    document.getElementById("emAtendimento").textContent = "0";
+    document.getElementById("resolvidos").textContent = "0";
 
     lista.innerHTML = `
       <div class="mensagem-erro">
@@ -132,125 +52,209 @@ async function carregarChamados() {
   }
 }
 
+function atualizarContadores() {
+  const total = chamadosCache.length;
+
+  const aguardando = chamadosCache.filter(
+    chamado => chamado.status === "aguardando_humano"
+  ).length;
+
+  const emAtendimento = chamadosCache.filter(
+    chamado => chamado.status === "em_atendimento"
+  ).length;
+
+  const resolvidos = chamadosCache.filter(
+    chamado => chamado.status === "resolvido"
+  ).length;
+
+  document.getElementById("totalChamados").textContent = total;
+  document.getElementById("aguardando").textContent = aguardando;
+  document.getElementById("emAtendimento").textContent = emAtendimento;
+  document.getElementById("resolvidos").textContent = resolvidos;
+}
+
+function renderizarChamados() {
+  const lista = document.getElementById("listaChamados");
+
+  const chamadosFiltrados =
+    filtroAtual === "todos"
+      ? chamadosCache
+      : chamadosCache.filter(
+          chamado => chamado.status === filtroAtual
+        );
+
+  if (chamadosFiltrados.length === 0) {
+    lista.innerHTML = `
+      <div class="mensagem-vazia">
+        Nenhum chamado encontrado neste filtro.
+      </div>
+    `;
+    return;
+  }
+
+  lista.innerHTML = "";
+
+  chamadosFiltrados.forEach(chamado => {
+    const numero = limparNumero(chamado.numero);
+
+    const card = document.createElement("div");
+    card.className = "chamado";
+
+    const topo = document.createElement("div");
+    topo.className = "chamado-topo";
+
+    const cliente = document.createElement("div");
+
+    cliente.innerHTML = `
+      <strong class="numero-cliente">
+        ${escapeHtml(numero)}
+      </strong>
+
+      <div class="data">
+        ${escapeHtml(chamado.data || "")}
+      </div>
+    `;
+
+    const status = document.createElement("span");
+    status.className = `status ${classeStatus(chamado.status)}`;
+    status.textContent = formatarStatus(chamado.status);
+
+    topo.appendChild(cliente);
+    topo.appendChild(status);
+
+    const problema = document.createElement("div");
+    problema.className = "problema";
+
+    const tituloProblema = document.createElement("strong");
+    tituloProblema.textContent = "Problema:";
+
+    const textoProblema = document.createElement("p");
+    textoProblema.textContent =
+      chamado.problema_original || "Não informado";
+
+    problema.appendChild(tituloProblema);
+    problema.appendChild(textoProblema);
+
+    const botao = document.createElement("button");
+    botao.className = "botao-secundario botao-abrir";
+    botao.textContent = "Abrir chamado";
+
+    botao.addEventListener(
+      "click",
+      () => abrirChamado(chamado)
+    );
+
+    card.appendChild(topo);
+    card.appendChild(problema);
+    card.appendChild(botao);
+
+    lista.appendChild(card);
+  });
+}
+
 function abrirChamado(chamado) {
   chamadoAtual = chamado;
 
-  document.getElementById(
-    "modalNumero"
-  ).textContent =
+  document.getElementById("modalNumero").textContent =
     limparNumero(chamado.numero);
 
-  document.getElementById(
-    "modalData"
-  ).textContent =
+  document.getElementById("modalData").textContent =
     chamado.data || "";
 
-  document.getElementById(
-    "modalStatus"
-  ).textContent =
+  const modalStatus = document.getElementById("modalStatus");
+
+  modalStatus.textContent =
     formatarStatus(chamado.status);
 
-  document.getElementById(
-    "modalProblema"
-  ).textContent =
-    chamado.problema_original ||
-    "Não informado";
+  modalStatus.className =
+    `status ${classeStatus(chamado.status)}`;
 
-  document.getElementById(
-    "modalResumo"
-  ).textContent =
-    chamado.resumo_ia ||
-    "Sem resumo disponível.";
+  document.getElementById("modalProblema").textContent =
+    chamado.problema_original || "Não informado";
 
-  document.getElementById(
-    "mensagemTecnico"
-  ).value = "";
+  document.getElementById("modalResumo").textContent =
+    chamado.resumo_ia || "Sem resumo disponível.";
 
-  document.getElementById(
-    "areaResposta"
-  ).classList.add("oculto");
+  document.getElementById("mensagemTecnico").value = "";
 
-  document.getElementById(
-    "modalChamado"
-  ).classList.remove("oculto");
+  document.getElementById("areaResposta")
+    .classList.add("oculto");
+
+  atualizarBotoesModal();
+
+  document.getElementById("modalChamado")
+    .classList.remove("oculto");
+}
+
+function atualizarBotoesModal() {
+  const btnAssumir = document.getElementById("btnAssumir");
+  const btnResolver = document.getElementById("btnResolver");
+
+  if (!chamadoAtual) {
+    return;
+  }
+
+  btnAssumir.disabled =
+    chamadoAtual.status === "em_atendimento" ||
+    chamadoAtual.status === "resolvido";
+
+  btnResolver.disabled =
+    chamadoAtual.status === "resolvido";
 }
 
 function fecharModal() {
-  document.getElementById(
-    "modalChamado"
-  ).classList.add("oculto");
+  document.getElementById("modalChamado")
+    .classList.add("oculto");
 
-  document.getElementById(
-    "areaResposta"
-  ).classList.add("oculto");
+  document.getElementById("areaResposta")
+    .classList.add("oculto");
 
   chamadoAtual = null;
 }
 
 function mostrarResposta() {
-  document.getElementById(
-    "areaResposta"
-  ).classList.remove("oculto");
+  document.getElementById("areaResposta")
+    .classList.remove("oculto");
 
-  document.getElementById(
-    "mensagemTecnico"
-  ).focus();
+  document.getElementById("mensagemTecnico").focus();
 }
 
 function ocultarResposta() {
-  document.getElementById(
-    "areaResposta"
-  ).classList.add("oculto");
+  document.getElementById("areaResposta")
+    .classList.add("oculto");
 }
 
 async function assumirChamado() {
-  if (!chamadoAtual) {
-    return;
-  }
+  if (!chamadoAtual) return;
 
-  await atualizarStatusChamado(
-    "em_atendimento"
-  );
+  await atualizarStatusChamado("em_atendimento");
 }
 
 async function resolverChamado() {
-  if (!chamadoAtual) {
-    return;
-  }
+  if (!chamadoAtual) return;
 
   const confirmar = confirm(
     "Tem certeza que deseja marcar este chamado como resolvido?"
   );
 
-  if (!confirmar) {
-    return;
-  }
+  if (!confirmar) return;
 
-  await atualizarStatusChamado(
-    "resolvido"
-  );
+  await atualizarStatusChamado("resolvido");
 }
 
 async function atualizarStatusChamado(novoStatus) {
-  if (!chamadoAtual) {
-    return;
-  }
+  if (!chamadoAtual) return;
 
   try {
-    mostrarToast(
-      "Atualizando chamado..."
-    );
+    mostrarToast("Atualizando chamado...");
 
     const resposta = await fetch(
       API_ATUALIZAR_STATUS,
       {
         method: "POST",
-
         headers: {
-          "Content-Type":
-            "application/json"
+          "Content-Type": "application/json"
         },
-
         body: JSON.stringify({
           id: chamadoAtual.id,
           status: novoStatus
@@ -259,9 +263,7 @@ async function atualizarStatusChamado(novoStatus) {
     );
 
     if (!resposta.ok) {
-      throw new Error(
-        `Erro HTTP ${resposta.status}`
-      );
+      throw new Error(`Erro HTTP ${resposta.status}`);
     }
 
     let dados = null;
@@ -272,56 +274,39 @@ async function atualizarStatusChamado(novoStatus) {
       dados = null;
     }
 
-    if (
-      dados &&
-      dados.success === false
-    ) {
+    if (dados && dados.success === false) {
       throw new Error(
-        dados.message ||
-        "Erro ao atualizar status"
+        dados.message || "Erro ao atualizar status"
       );
     }
 
-    chamadoAtual.status =
-      novoStatus;
+    chamadoAtual.status = novoStatus;
 
-    document.getElementById(
-      "modalStatus"
-    ).textContent =
+    const modalStatus =
+      document.getElementById("modalStatus");
+
+    modalStatus.textContent =
       formatarStatus(novoStatus);
 
-    if (
-      novoStatus ===
-      "em_atendimento"
-    ) {
-      mostrarToast(
-        "Atendimento assumido."
-      );
-    }
+    modalStatus.className =
+      `status ${classeStatus(novoStatus)}`;
 
-    if (
-      novoStatus ===
-      "resolvido"
-    ) {
-      mostrarToast(
-        "Chamado marcado como resolvido."
-      );
-    }
+    atualizarBotoesModal();
+
+    mostrarToast(
+      novoStatus === "resolvido"
+        ? "Chamado marcado como resolvido."
+        : "Atendimento assumido."
+    );
 
     await carregarChamados();
 
-    if (
-      novoStatus ===
-      "resolvido"
-    ) {
+    if (novoStatus === "resolvido") {
       fecharModal();
     }
 
   } catch (erro) {
-    console.error(
-      "Erro ao atualizar chamado:",
-      erro
-    );
+    console.error("Erro ao atualizar chamado:", erro);
 
     mostrarToast(
       "Não foi possível atualizar o status do chamado."
@@ -331,33 +316,23 @@ async function atualizarStatusChamado(novoStatus) {
 
 async function enviarResposta() {
   if (!chamadoAtual) {
-    mostrarToast(
-      "Nenhum chamado selecionado."
-    );
-
+    mostrarToast("Nenhum chamado selecionado.");
     return;
   }
 
   const campoMensagem =
-    document.getElementById(
-      "mensagemTecnico"
-    );
+    document.getElementById("mensagemTecnico");
 
   const mensagem =
     campoMensagem.value.trim();
 
   if (!mensagem) {
-    mostrarToast(
-      "Digite uma mensagem antes de enviar."
-    );
-
+    mostrarToast("Digite uma mensagem antes de enviar.");
     campoMensagem.focus();
-
     return;
   }
 
-  const numero =
-    chamadoAtual.numero;
+  const numero = chamadoAtual.numero;
 
   const botaoEnviar =
     document.querySelector(
@@ -372,31 +347,25 @@ async function enviarResposta() {
   try {
     if (botaoEnviar) {
       botaoEnviar.disabled = true;
-      botaoEnviar.textContent =
-        "Enviando...";
+      botaoEnviar.textContent = "Enviando...";
     }
 
     const resposta = await fetch(
       API_RESPONDER_CHAMADO,
       {
         method: "POST",
-
         headers: {
-          "Content-Type":
-            "application/json"
+          "Content-Type": "application/json"
         },
-
         body: JSON.stringify({
-          numero: numero,
-          mensagem: mensagem
+          numero,
+          mensagem
         })
       }
     );
 
     if (!resposta.ok) {
-      throw new Error(
-        `Erro HTTP ${resposta.status}`
-      );
+      throw new Error(`Erro HTTP ${resposta.status}`);
     }
 
     let dados = null;
@@ -407,10 +376,7 @@ async function enviarResposta() {
       dados = null;
     }
 
-    if (
-      dados &&
-      dados.success === false
-    ) {
+    if (dados && dados.success === false) {
       throw new Error(
         dados.message ||
         "O n8n informou que o envio falhou."
@@ -418,7 +384,6 @@ async function enviarResposta() {
     }
 
     campoMensagem.value = "";
-
     ocultarResposta();
 
     mostrarToast(
@@ -426,10 +391,7 @@ async function enviarResposta() {
     );
 
   } catch (erro) {
-    console.error(
-      "Erro ao enviar mensagem:",
-      erro
-    );
+    console.error("Erro ao enviar mensagem:", erro);
 
     mostrarToast(
       "Não foi possível enviar a mensagem. Verifique o n8n, Tailscale e Evolution API."
@@ -438,93 +400,78 @@ async function enviarResposta() {
   } finally {
     if (botaoEnviar) {
       botaoEnviar.disabled = false;
-
       botaoEnviar.textContent =
-        textoOriginal ||
-        "Enviar mensagem";
+        textoOriginal || "Enviar mensagem";
     }
   }
 }
 
 function limparNumero(numero) {
   return String(numero || "")
-    .replace(
-      "@s.whatsapp.net",
-      ""
-    )
-    .replace(
-      "@c.us",
-      ""
-    );
+    .replace("@s.whatsapp.net", "")
+    .replace("@c.us", "");
 }
 
 function formatarStatus(status) {
   const mapa = {
-    aguardando_humano:
-      "Aguardando humano",
-
-    em_atendimento:
-      "Em atendimento",
-
-    resolvido:
-      "Resolvido"
+    aguardando_humano: "Aguardando humano",
+    em_atendimento: "Em atendimento",
+    resolvido: "Resolvido"
   };
 
-  return (
-    mapa[status] ||
-    status ||
-    "Sem status"
-  );
+  return mapa[status] || status || "Sem status";
+}
+
+function classeStatus(status) {
+  const mapa = {
+    aguardando_humano: "status-aguardando",
+    em_atendimento: "status-atendimento",
+    resolvido: "status-resolvido"
+  };
+
+  return mapa[status] || "status-aguardando";
 }
 
 function mostrarToast(mensagem) {
-  const toast =
-    document.getElementById(
-      "toast"
-    );
+  const toast = document.getElementById("toast");
 
-  toast.textContent =
-    mensagem;
+  toast.textContent = mensagem;
+  toast.classList.remove("oculto");
 
-  toast.classList.remove(
-    "oculto"
-  );
+  clearTimeout(window.__toastTimer);
 
-  clearTimeout(
-    window.__toastTimer
-  );
-
-  window.__toastTimer =
-    setTimeout(() => {
-      toast.classList.add(
-        "oculto"
-      );
-    }, 3500);
+  window.__toastTimer = setTimeout(() => {
+    toast.classList.add("oculto");
+  }, 3500);
 }
 
 function escapeHtml(valor) {
   return String(valor ?? "")
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
+
+document
+  .querySelectorAll(".filtro")
+  .forEach(botao => {
+    botao.addEventListener("click", () => {
+      document
+        .querySelectorAll(".filtro")
+        .forEach(item =>
+          item.classList.remove("ativo")
+        );
+
+      botao.classList.add("ativo");
+
+      filtroAtual =
+        botao.dataset.status;
+
+      renderizarChamados();
+    });
+  });
 
 document.addEventListener(
   "keydown",
@@ -536,9 +483,7 @@ document.addEventListener(
 );
 
 document
-  .getElementById(
-    "modalChamado"
-  )
+  .getElementById("modalChamado")
   .addEventListener(
     "click",
     event => {

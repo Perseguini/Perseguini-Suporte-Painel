@@ -26,13 +26,23 @@
 
     <section class="resumo">
       <div class="card-resumo">
-        <span>Chamados</span>
+        <span>Total de chamados</span>
         <strong id="totalChamados">0</strong>
       </div>
 
-      <div class="card-resumo">
+      <div class="card-resumo aguardando-card">
         <span>Aguardando humano</span>
         <strong id="aguardando">0</strong>
+      </div>
+
+      <div class="card-resumo atendimento-card">
+        <span>Em atendimento</span>
+        <strong id="emAtendimento">0</strong>
+      </div>
+
+      <div class="card-resumo resolvidos-card">
+        <span>Resolvidos</span>
+        <strong id="resolvidos">0</strong>
       </div>
     </section>
 
@@ -40,11 +50,31 @@
       <div class="titulo-lista">
         <div>
           <h2>Chamados</h2>
-          <p class="subtitulo">Atendimentos encaminhados pela IA para suporte humano</p>
+          <p class="subtitulo">
+            Atendimentos encaminhados pela IA para suporte humano
+          </p>
         </div>
 
         <button class="botao-secundario" onclick="carregarChamados()">
           Atualizar lista
+        </button>
+      </div>
+
+      <div class="filtros">
+        <button class="filtro ativo" data-status="todos">
+          Todos
+        </button>
+
+        <button class="filtro" data-status="aguardando_humano">
+          Aguardando
+        </button>
+
+        <button class="filtro" data-status="em_atendimento">
+          Em atendimento
+        </button>
+
+        <button class="filtro" data-status="resolvido">
+          Resolvidos
         </button>
       </div>
 
@@ -94,7 +124,7 @@
       </div>
 
       <div class="acoes-chamado">
-        <button class="botao-primario" onclick="assumirChamado()">
+        <button id="btnAssumir" class="botao-primario" onclick="assumirChamado()">
           Assumir atendimento
         </button>
 
@@ -102,7 +132,7 @@
           Responder cliente
         </button>
 
-        <button class="botao-sucesso" onclick="resolverChamado()">
+        <button id="btnResolver" class="botao-sucesso" onclick="resolverChamado()">
           Marcar como resolvido
         </button>
       </div>
