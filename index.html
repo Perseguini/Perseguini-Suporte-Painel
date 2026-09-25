@@ -10,9 +10,15 @@
 <body>
 
   <header>
-    <div>
-      <h1>Perseguini Suporte IA</h1>
-      <p>Painel do Técnico</p>
+    <div class="cabecalho-conteudo">
+      <div>
+        <h1>Perseguini Suporte IA</h1>
+        <p>Painel do Técnico</p>
+      </div>
+
+      <button class="botao-atualizar-topo" onclick="carregarChamados()">
+        Atualizar
+      </button>
     </div>
   </header>
 
@@ -32,10 +38,13 @@
 
     <section>
       <div class="titulo-lista">
-        <h2>Chamados</h2>
+        <div>
+          <h2>Chamados</h2>
+          <p class="subtitulo">Atendimentos encaminhados pela IA para suporte humano</p>
+        </div>
 
-        <button onclick="carregarChamados()">
-          Atualizar
+        <button class="botao-secundario" onclick="carregarChamados()">
+          Atualizar lista
         </button>
       </div>
 
@@ -46,7 +55,82 @@
 
   </main>
 
-  <script src="script.js"></script>
+  <div id="modalChamado" class="modal oculto">
+    <div class="modal-conteudo">
 
+      <button class="fechar-modal" onclick="fecharModal()" aria-label="Fechar">
+        ×
+      </button>
+
+      <div class="modal-cabecalho">
+        <div>
+          <span class="modal-legenda">Chamado</span>
+          <h2>Detalhes do atendimento</h2>
+        </div>
+
+        <span id="modalStatus" class="status"></span>
+      </div>
+
+      <div class="grade-detalhes">
+        <div class="detalhe">
+          <strong>Cliente</strong>
+          <span id="modalNumero"></span>
+        </div>
+
+        <div class="detalhe">
+          <strong>Data</strong>
+          <span id="modalData"></span>
+        </div>
+      </div>
+
+      <div class="detalhe bloco">
+        <strong>Problema informado</strong>
+        <p id="modalProblema"></p>
+      </div>
+
+      <div class="detalhe bloco">
+        <strong>Resumo da IA</strong>
+        <pre id="modalResumo"></pre>
+      </div>
+
+      <div class="acoes-chamado">
+        <button class="botao-primario" onclick="assumirChamado()">
+          Assumir atendimento
+        </button>
+
+        <button class="botao-secundario" onclick="mostrarResposta()">
+          Responder cliente
+        </button>
+
+        <button class="botao-sucesso" onclick="resolverChamado()">
+          Marcar como resolvido
+        </button>
+      </div>
+
+      <div id="areaResposta" class="area-resposta oculto">
+        <label for="mensagemTecnico">Mensagem para o cliente</label>
+
+        <textarea
+          id="mensagemTecnico"
+          placeholder="Digite a mensagem que será enviada ao WhatsApp do cliente..."
+        ></textarea>
+
+        <div class="acoes-resposta">
+          <button class="botao-secundario" onclick="ocultarResposta()">
+            Cancelar
+          </button>
+
+          <button class="botao-primario" onclick="enviarResposta()">
+            Enviar mensagem
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast" class="toast oculto"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>
