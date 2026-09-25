@@ -1,8 +1,8 @@
 const API_LISTAR_CHAMADOS =
-  "https://desktop-cc7diaj.tail18f3985.ts.net/webhook/chamados";
+  "https://desktop-cc7diaj.tail8f3985.ts.net/webhook/chamados";
 
 const API_RESPONDER_CHAMADO =
-  "https://desktop-cc7diaj.tail18f3985.ts.net/webhook/chamado/responder";
+  "https://desktop-cc7diaj.tail8f3985.ts.net/webhook/chamado/responder";
 
 let chamadoAtual = null;
 
