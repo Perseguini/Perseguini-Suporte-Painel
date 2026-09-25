@@ -4,6 +4,9 @@ const API_LISTAR_CHAMADOS =
 const API_RESPONDER_CHAMADO =
   "https://desktop-cc7diaj.tail8f3985.ts.net/webhook/chamado/responder";
 
+const API_ATUALIZAR_STATUS =
+  "https://desktop-cc7diaj.tail8f3985.ts.net/webhook/chamado/status";
+
 let chamadoAtual = null;
 
 async function carregarChamados() {
@@ -50,11 +53,9 @@ async function carregarChamados() {
       const numero = limparNumero(chamado.numero);
 
       const card = document.createElement("div");
-
       card.className = "chamado";
 
       const topo = document.createElement("div");
-
       topo.className = "chamado-topo";
 
       const cliente = document.createElement("div");
@@ -70,42 +71,28 @@ async function carregarChamados() {
       `;
 
       const status = document.createElement("span");
-
       status.className = "status";
-
-      status.textContent =
-        formatarStatus(chamado.status);
+      status.textContent = formatarStatus(chamado.status);
 
       topo.appendChild(cliente);
       topo.appendChild(status);
 
       const problema = document.createElement("div");
-
       problema.className = "problema";
 
-      const tituloProblema =
-        document.createElement("strong");
-
+      const tituloProblema = document.createElement("strong");
       tituloProblema.textContent = "Problema:";
 
-      const textoProblema =
-        document.createElement("p");
-
+      const textoProblema = document.createElement("p");
       textoProblema.textContent =
-        chamado.problema_original ||
-        "Não informado";
+        chamado.problema_original || "Não informado";
 
       problema.appendChild(tituloProblema);
       problema.appendChild(textoProblema);
 
-      const botao =
-        document.createElement("button");
-
-      botao.className =
-        "botao-secundario botao-abrir";
-
-      botao.textContent =
-        "Abrir chamado";
+      const botao = document.createElement("button");
+      botao.className = "botao-secundario botao-abrir";
+      botao.textContent = "Abrir chamado";
 
       botao.addEventListener(
         "click",
@@ -137,14 +124,13 @@ async function carregarChamados() {
       <div class="mensagem-erro">
         Não foi possível carregar os chamados.
         <br><br>
-        Verifique se o n8n está ligado e se
-        o workflow "Listar Chamados" está ativo.
+        Verifique se o n8n está ligado,
+        se o Tailscale Funnel está ativo
+        e se o workflow "Listar Chamados" está publicado.
       </div>
     `;
   }
 }
-
-
 
 function abrirChamado(chamado) {
   chamadoAtual = chamado;
@@ -189,8 +175,6 @@ function abrirChamado(chamado) {
   ).classList.remove("oculto");
 }
 
-
-
 function fecharModal() {
   document.getElementById(
     "modalChamado"
@@ -203,8 +187,6 @@ function fecharModal() {
   chamadoAtual = null;
 }
 
-
-
 function mostrarResposta() {
   document.getElementById(
     "areaResposta"
@@ -215,39 +197,137 @@ function mostrarResposta() {
   ).focus();
 }
 
-
-
 function ocultarResposta() {
   document.getElementById(
     "areaResposta"
   ).classList.add("oculto");
 }
 
-
-
-function assumirChamado() {
+async function assumirChamado() {
   if (!chamadoAtual) {
     return;
   }
 
-  mostrarToast(
-    "O botão Assumir atendimento será conectado ao Redis no próximo passo."
+  await atualizarStatusChamado(
+    "em_atendimento"
   );
 }
 
-
-
-function resolverChamado() {
+async function resolverChamado() {
   if (!chamadoAtual) {
     return;
   }
 
-  mostrarToast(
-    "O botão Marcar como resolvido será conectado ao Redis no próximo passo."
+  const confirmar = confirm(
+    "Tem certeza que deseja marcar este chamado como resolvido?"
+  );
+
+  if (!confirmar) {
+    return;
+  }
+
+  await atualizarStatusChamado(
+    "resolvido"
   );
 }
 
+async function atualizarStatusChamado(novoStatus) {
+  if (!chamadoAtual) {
+    return;
+  }
 
+  try {
+    mostrarToast(
+      "Atualizando chamado..."
+    );
+
+    const resposta = await fetch(
+      API_ATUALIZAR_STATUS,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+          id: chamadoAtual.id,
+          status: novoStatus
+        })
+      }
+    );
+
+    if (!resposta.ok) {
+      throw new Error(
+        `Erro HTTP ${resposta.status}`
+      );
+    }
+
+    let dados = null;
+
+    try {
+      dados = await resposta.json();
+    } catch {
+      dados = null;
+    }
+
+    if (
+      dados &&
+      dados.success === false
+    ) {
+      throw new Error(
+        dados.message ||
+        "Erro ao atualizar status"
+      );
+    }
+
+    chamadoAtual.status =
+      novoStatus;
+
+    document.getElementById(
+      "modalStatus"
+    ).textContent =
+      formatarStatus(novoStatus);
+
+    if (
+      novoStatus ===
+      "em_atendimento"
+    ) {
+      mostrarToast(
+        "Atendimento assumido."
+      );
+    }
+
+    if (
+      novoStatus ===
+      "resolvido"
+    ) {
+      mostrarToast(
+        "Chamado marcado como resolvido."
+      );
+    }
+
+    await carregarChamados();
+
+    if (
+      novoStatus ===
+      "resolvido"
+    ) {
+      fecharModal();
+    }
+
+  } catch (erro) {
+    console.error(
+      "Erro ao atualizar chamado:",
+      erro
+    );
+
+    mostrarToast(
+      "Não foi possível atualizar o status do chamado."
+    );
+  }
+}
 
 async function enviarResposta() {
   if (!chamadoAtual) {
@@ -360,12 +440,11 @@ async function enviarResposta() {
       botaoEnviar.disabled = false;
 
       botaoEnviar.textContent =
-        textoOriginal || "Enviar mensagem";
+        textoOriginal ||
+        "Enviar mensagem";
     }
   }
 }
-
-
 
 function limparNumero(numero) {
   return String(numero || "")
@@ -378,8 +457,6 @@ function limparNumero(numero) {
       ""
     );
 }
-
-
 
 function formatarStatus(status) {
   const mapa = {
@@ -399,8 +476,6 @@ function formatarStatus(status) {
     "Sem status"
   );
 }
-
-
 
 function mostrarToast(mensagem) {
   const toast =
@@ -427,8 +502,6 @@ function mostrarToast(mensagem) {
     }, 3500);
 }
 
-
-
 function escapeHtml(valor) {
   return String(valor ?? "")
     .replaceAll(
@@ -453,8 +526,6 @@ function escapeHtml(valor) {
     );
 }
 
-
-
 document.addEventListener(
   "keydown",
   event => {
@@ -463,8 +534,6 @@ document.addEventListener(
     }
   }
 );
-
-
 
 document
   .getElementById(
@@ -481,7 +550,5 @@ document
       }
     }
   );
-
-
 
 carregarChamados();
